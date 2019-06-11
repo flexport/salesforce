@@ -1,8 +1,8 @@
 (ns salesforce.core
   (:require
-    [clojure.string :as str]
-    [cheshire.core :as json]
-    [clj-http.client :as http]))
+   [clojure.string :as str]
+   [cheshire.core :as json]
+   [clj-http.client :as http]))
 
 (def ^:dynamic +token+ nil)
 
@@ -31,17 +31,17 @@
    - security-token TOKEN
    - login-host HOSTNAME (default login.salesforce.com"
   [{:keys [client-id client-secret username password security-token login-host]}]
-     (let [hostname (or login-host "login.salesforce.com")
-           auth-url (format "https://%s/services/oauth2/token" hostname)
-           params {:grant_type "password"
-                   :client_id client-id
-                   :client_secret client-secret
-                   :username username
-                   :password (str password security-token)
-                   :format "json"}
-           resp (http/post auth-url {:form-params params})]
-       (-> (:body resp)
-           (json/decode true))))
+  (let [hostname (or login-host "login.salesforce.com")
+        auth-url (format "https://%s/services/oauth2/token" hostname)
+        params {:grant_type "password"
+                :client_id client-id
+                :client_secret client-secret
+                :username username
+                :password (str password security-token)
+                :format "json"}
+        resp (http/post auth-url {:form-params params})]
+    (-> (:body resp)
+        (json/decode true))))
 
 (def ^:private limit-info (atom {}))
 
@@ -69,11 +69,11 @@
   (let [base-url (:instance_url token)
         full-url (str base-url url)
         resp (try (http/request
-               (merge (or params {})
-                      {:method method
-                       :url full-url
-                       :headers {"Authorization" (str "Bearer " (:access_token token))}}))  
-              (catch Exception e (:body (ex-data e))))]
+                   (merge (or params {})
+                          {:method method
+                           :url full-url
+                           :headers {"Authorization" (str "Bearer " (:access_token token))}}))
+                  (catch Exception e (:body (ex-data e))))]
     (-> (get-in resp [:headers "sforce-limit-info"]) ;; Record limit info in atom
         (parse-limit-info)
         ((partial reset! limit-info)))
@@ -88,7 +88,7 @@
     (with-meta
       (request method url token params)
       {:method method :url url :token token})
-  (catch Exception e (.toString e))))
+    (catch Exception e (.toString e))))
 
 ;; Salesforce API version information
 
@@ -148,18 +148,18 @@
   "Fetch a single SObject or passing in a vector of attributes
    return a subset of the data"
   ([sobject identifier fields token]
-     (when (or (seq? fields) (vector? fields))
-       (let [params (->> (into [] (interpose "," fields))
-                         (str/join)
-                         (conj ["?fields="])
-                         (apply str))
-             uri (format "/services/data/v%s/sobjects/%s/%s%s"
-                   @+version+ sobject identifier params)
-             response (request :get uri token)]
-         (dissoc response :attributes))))
+   (when (or (seq? fields) (vector? fields))
+     (let [params (->> (into [] (interpose "," fields))
+                       (str/join)
+                       (conj ["?fields="])
+                       (apply str))
+           uri (format "/services/data/v%s/sobjects/%s/%s%s"
+                       @+version+ sobject identifier params)
+           response (request :get uri token)]
+       (dissoc response :attributes))))
   ([sobject identifier token]
-    (request :get
-     (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier) token)))
+   (request :get
+            (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier) token)))
 
 (comment
   ;; Fetch all the info
@@ -171,7 +171,7 @@
   "Describe an SObject"
   [sobject token]
   (request :get
-    (format "/services/data/v%s/sobjects/%s/describe" @+version+ sobject) token))
+           (format "/services/data/v%s/sobjects/%s/describe" @+version+ sobject) token))
 
 (comment
   (so->describe "Account" auth))
@@ -180,15 +180,15 @@
   "Create a new record"
   [sobject record token]
   (let [params
-    { :form-params record
-      :content-type :json }]
+        {:form-params record
+         :content-type :json}]
     (request :post
-      (format "/services/data/v%s/sobjects/%s/" @+version+ sobject) token params)))
+             (format "/services/data/v%s/sobjects/%s/" @+version+ sobject) token params)))
 
 (comment
   (so->create "Account" {:Name "My new account"} auth))
 
-(defn so->update 
+(defn so->update
   "Update a record
    - sojbect the name of the object i.e Account
    - identifier the object id
@@ -196,11 +196,11 @@
    - token your api auth info"
   [sobject identifier record token]
   (let [params
-    { :body (json/generate-string record)
-      :content-type :json }]
+        {:body (json/generate-string record)
+         :content-type :json}]
     (request :patch
-      (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier) 
-      token params)))
+             (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier)
+             token params)))
 
 (defn so->delete
   "Delete a record
@@ -209,8 +209,8 @@
    - token your api auth info"
   [sobject identifier token]
   (request :delete
-    (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier)
-    token))
+           (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier)
+           token))
 
 (comment
   (so->delete "Account" "001i0000008Ge2OAAS" auth))
@@ -225,8 +225,8 @@
   (let [params {:body (json/generate-string (or data {:inputs []}))
                 :content-type :json}]
     (request :post
-      (format "/services/data/v%s/actions/custom/flow/%s" @+version+ identifier)
-      token params)))
+             (format "/services/data/v%s/actions/custom/flow/%s" @+version+ identifier)
+             token params)))
 
 (comment
   (so->flow "Escalate_to_Case" a {:inputs [{"CommentCount" 6
