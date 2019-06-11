@@ -1,4 +1,4 @@
-(defproject org.clojars.flexport-clojure-eng/salesforce "1.0.2"
+(defproject org.clojars.flexport-clojure-eng/salesforce "1.0.3"
   :description "A clojure library for accessing the salesforce api"
   :url "https://www.flexport.com"
   :license {:name "Eclipse Public License"
