@@ -5,4 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [clj-http "3.7.0"]
-                 [cheshire "5.8.0"]])
+                 [cheshire "5.8.0"]]
+
+  :plugins [[lein-cljfmt "0.6.4"]
+            [lein-ancient "0.6.15"]]) ; For detecting and fixing outdated dependencies. See https://github.com/xsc/lein-ancient
