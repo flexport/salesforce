@@ -34,7 +34,7 @@
       {:form-params {:grant_type    "password"
                      :client_id     "my-ID"
                      :client_secret "my-SECRET"
-                     :format         "json",
+                     :format        "json",
                      :username      "my-USERNAME"
                      :password      "my-PASSWORDmy-TOKEN"}}
       (make-params-for-auth-request well-formed-auth-app-data nil))))
@@ -42,10 +42,10 @@
   (testing "accepts empty 2nd arg"
     (is
      (=
-      {:form-params {:grant_type "password"
+      {:form-params {:grant_type    "password"
                      :client_id     "my-ID"
                      :client_secret "my-SECRET"
-                     :format         "json",
+                     :format        "json",
                      :username      "my-USERNAME"
                      :password      "my-PASSWORDmy-TOKEN"}}
       (make-params-for-auth-request well-formed-auth-app-data {}))))
@@ -53,10 +53,10 @@
   (testing "includes all keys from 2nd arg when provided"
     (is
      (=
-      {:form-params                {:grant_type "password"
+      {:form-params                {:grant_type    "password"
                                     :client_id     "my-ID"
                                     :client_secret "my-SECRET"
-                                    :format         "json",
+                                    :format        "json",
                                     :username      "my-USERNAME"
                                     :password      "my-PASSWORDmy-TOKEN"}
        :connection-timeout         10
@@ -65,9 +65,8 @@
       (make-params-for-auth-request well-formed-auth-app-data
                                     {:connection-timeout 10 :connection-request-timeout 10 :foo 5})))))
 
-()
-
 ;; Private functions
+
 
 (with-private-fns [salesforce.core [gen-query-url]]
   (deftest gen-query-url-test
