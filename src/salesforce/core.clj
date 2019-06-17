@@ -21,25 +21,42 @@
          (with-open [r (clojure.java.io/reader f)]
            (read (java.io.PushbackReader. r))))))
 
-(defn auth!
-  "Get security token and auth info from Salesforce
-   config is a map in the form
+(defn make-params-for-auth-request
+  "Prepare params map for clj_http post call
+  app_data is a map in the form
    - client-id ID
    - client-secret SECRET
    - username USERNAME
    - password PASSWORD
    - security-token TOKEN
-   - login-host HOSTNAME (default login.salesforce.com"
-  [{:keys [client-id client-secret username password security-token login-host]}]
-  (let [hostname (or login-host "login.salesforce.com")
-        auth-url (format "https://%s/services/oauth2/token" hostname)
-        params {:grant_type "password"
-                :client_id client-id
-                :client_secret client-secret
+  http-client-config-map is a (potentially empty) map of options accepted by clj-http/core/request,
+  including keys such as: connection-timeout connection-request-timeout connection-manager"
+  [{:keys [client-id client-secret username password security-token login-host] :as app_data} http-client-config-map]
+  (let [params {:grant_type "password"
+                :client_id client-id ; note conversion of hyphen to underscore in key name
+                :client_secret client-secret ; note conversion of hyphen to underscore in key name
                 :username username
                 :password (str password security-token)
                 :format "json"}
-        resp (http/post auth-url {:form-params params})]
+        all-params (merge {:form-params params} (or http-client-config-map {}))]
+    all-params))
+
+(defn auth!
+  "Get security token and auth info from Salesforce
+   app_data is a map in the form
+   - client-id ID
+   - client-secret SECRET
+   - username USERNAME
+   - password PASSWORD
+   - security-token TOKEN
+   - login-host HOSTNAME (default login.salesforce.com
+   http-client-config-map is a map of options accepted by clj-http/core/request, including keys: connection-timeout connection-request-timeout connection-manager
+   "
+  [[{:keys [login-host] :as app_data} http-client-config-map]]
+  (let [hostname (or login-host "login.salesforce.com")
+        auth-url (format "https://%s/services/oauth2/token" hostname)
+        all-params (make-params-for-auth-request app_data http-client-config-map)
+        resp (http/post auth-url all-params)]
     (-> (:body resp)
         (json/decode true))))
 
