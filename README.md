@@ -200,6 +200,11 @@ This final example shows an example REPL session using the API
 
 ```
 
+## Development
+To push a local copy of the jar:
+
+    lein install
+
 ## Contributors
 
 + Owain Lewis

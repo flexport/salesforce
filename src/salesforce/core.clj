@@ -2,7 +2,8 @@
   (:require
    [clojure.string :as str]
    [cheshire.core :as json]
-   [clj-http.client :as http]))
+   [clj-http.client :as http]
+   [clojure.tools.logging :as log]))
 
 (def ^:dynamic +token+ nil)
 
@@ -30,16 +31,19 @@
    - password PASSWORD
    - security-token TOKEN
    - login-host HOSTNAME (default login.salesforce.com"
-  [{:keys [client-id client-secret username password security-token login-host]}]
+  [{:keys [client-id client-secret username password security-token login-host] :as inputs}]
   (let [hostname (or login-host "login.salesforce.com")
         auth-url (format "https://%s/services/oauth2/token" hostname)
-        params {:grant_type "password"
-                :client_id client-id
-                :client_secret client-secret
-                :username username
-                :password (str password security-token)
-                :format "json"}
-        resp (http/post auth-url {:form-params params})]
+        form-params {:grant_type "password"
+                     :client_id client-id
+                     :client_secret client-secret
+                     :username username
+                     :password (str password security-token)
+                     :format "json"}
+        timeout-params (select-keys inputs [:socket-timeout :connection-timeout])
+        all-params (merge {:form-params form-params} timeout-params)
+        resp (http/post auth-url all-params)]
+    (log/debug (str "auth! resp=" resp))
     (-> (:body resp)
         (json/decode true))))
 
@@ -73,7 +77,11 @@
                           {:method method
                            :url full-url
                            :headers {"Authorization" (str "Bearer " (:access_token token))}}))
-                  (catch Exception e (:body (ex-data e))))]
+                  (catch Exception e
+                    (log/error "request: caught exception: " (.getMessage e))
+                    (.printStackTrace e)
+                    (:body (ex-data e))))]
+    (log/debug (str "request: resp=" resp))
     (-> (get-in resp [:headers "sforce-limit-info"]) ;; Record limit info in atom
         (parse-limit-info)
         ((partial reset! limit-info)))
@@ -247,7 +255,7 @@
 (defn soql
   "Executes an arbitrary SOQL query
    i.e SELECT name from Account"
-  [query token]
-  (request :get (gen-query-url @+version+ query) token))
+  [query token & [params]]
+  (request :get (gen-query-url @+version+ query) token params))
 
 
