@@ -49,7 +49,7 @@
    - username USERNAME
    - password PASSWORD
    - security-token TOKEN
-   - login-host HOSTNAME (default login.salesforce.com
+   - login-host HOSTNAME (default login.salesforce.com)
    http-client-config-map is a map of options accepted by clj-http/core/request, including keys: connection-timeout connection-request-timeout connection-manager
    "
   [[{:keys [login-host] :as app_data} http-client-config-map]]
