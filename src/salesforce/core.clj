@@ -31,7 +31,7 @@
    - security-token TOKEN
   http-client-config-map is a (potentially empty) map of options accepted by clj-http/core/request,
   including keys such as: connection-timeout connection-request-timeout connection-manager"
-  [{:keys [client-id client-secret username password security-token login-host] :as app_data} http-client-config-map]
+  [{:keys [client-id client-secret username password security-token] :as app_data} http-client-config-map]
   (let [params {:grant_type "password"
                 :client_id client-id ; note conversion of hyphen to underscore in key name
                 :client_secret client-secret ; note conversion of hyphen to underscore in key name
