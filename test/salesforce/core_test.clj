@@ -27,7 +27,7 @@
 
 (def well-formed-client-config-empty {})
 
-(testing "make-params-for-auth-request"
+(deftest test-make-params-for-auth-request
   (testing "accepts nil 2nd arg"
     (is
      (=
