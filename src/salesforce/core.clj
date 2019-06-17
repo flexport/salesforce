@@ -50,7 +50,7 @@
    - password PASSWORD
    - security-token TOKEN
    - login-host HOSTNAME (default login.salesforce.com)
-   http-client-config-map is an optional map of options accepted by clj-http/core/request, including keys: connection-timeout connection-request-timeout connection-manager
+   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
    "
   [[{:keys [login-host] :as app_data} & [http-client-config-map]]]
   (let [hostname (or login-host "login.salesforce.com")
@@ -78,6 +78,27 @@
    {:used 11 :available 15000}"
   []
   @limit-info)
+
+(defn- prepare-request
+  "Part 1 of 2 of replacement of 'request' - A pure function that prepares input for a call to perform-request"
+  [method url token & [params]]
+  (let [base-url (:instance_url token)
+        full-url (str base-url url)
+        client-params (merge (or params {})
+                             {:method method
+                              :url full-url
+                              :headers {"Authorization" (str "Bearer " (:access_token token))}})]
+    client-params))
+
+(defn- perform-request [client-params]
+  "Part 2 of 2 of replacement of 'request' - An impure function that uses output of 'prepare-request to make actual http call via clj-http"
+  (let [resp (http/request client-params)]
+    (-> (get-in resp [:headers "sforce-limit-info"]) ;; Record limit info in atom
+        (parse-limit-info)
+        (partial reset! limit-info))
+    (-> resp
+        :body
+        (json/decode true))))
 
 (defn- request
   "Make a HTTP request to the Salesforce.com REST API
@@ -261,10 +282,17 @@
         soql (java.net.URLEncoder/encode query "UTF-8")]
     (apply str [url "?q=" soql])))
 
-(defn soql
+(defn soql-prepare
+  "Prepares params to execute an arbitrary SOQL query
+   i.e SELECT name from Account
+   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
+  [query token & [http-client-config-map]]
+  (prepare-request :get (gen-query-url @+version+ query) token http-client-config-map))
+
+(defn soql!
   "Executes an arbitrary SOQL query
-   i.e SELECT name from Account"
-  [query token]
-  (request :get (gen-query-url @+version+ query) token))
-
-
+   i.e SELECT name from Account
+   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
+  [query token & [http-client-config-map]]
+  (-> (soql-prepare query token http-client-config-map)
+      (perform-request)))

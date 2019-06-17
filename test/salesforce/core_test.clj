@@ -74,3 +74,12 @@
       (let [url (gen-query-url "20.0" "SELECT name from Account")]
         (is (= url "/services/data/v20.0/query?q=SELECT+name+from+Account"))))))
 
+(with-private-fns [salesforce.core [prepare-request]]
+  (deftest test-prepare-request
+    (testing "should generate expected params"
+      (let [token {:instance_url "http://salesforce.localhost" :access_token "my_token"}]
+        (is (= {:method :get
+                :url "http://salesforce.localhost/foo/bar/baz"
+                :headers {"Authorization" "Bearer my_token"}}
+               (prepare-request :get "/foo/bar/baz" token)))))))
+
