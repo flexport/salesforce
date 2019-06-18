@@ -7,13 +7,6 @@
   `(let ~(reduce #(conj %1 %2 `(ns-resolve '~ns '~%2)) [] fns)
      ~@tests))
 
-(def sample-auth
-  {:id           "https://login.salesforce.com/id/1234",
-   :issued_at    "1367488271359",
-   :instance_url "https://na15.salesforce.com",
-   :signature    "SIG",
-   :access_token "ACCESS"})
-
 (deftest with-version-test
   (testing "should set +version+ to a given string"
     (is (= "26.0" (with-version "26.0" @+version+)))))
@@ -72,7 +65,9 @@
 
 (deftest test-soql-prepare
   (testing "should generate expected params "
-    (is (= {:method :get :url "https://salesforce.localhost/services/data/v39.0/query?q=SELECT+foo+from+Account" :headers expected-auth-header-from-well-formed-auth-token-mock}
+    (is (= {:method :get
+            :headers expected-auth-header-from-well-formed-auth-token-mock
+            :url "https://salesforce.localhost/services/data/v39.0/query?q=SELECT+foo+from+Account" }
            (soql-prepare "SELECT foo from Account" well-formed-auth-token-mock)))))
 
 ;; Private functions
@@ -101,7 +96,6 @@
 
 (with-private-fns [salesforce.core [parse-limit-info]]
   (deftest test-parse-limit-info
-
     (testing "extracts info"
       (is (= {:used 289725 :available 645000}
              (parse-limit-info "api-usage=289725/645000"))))))
