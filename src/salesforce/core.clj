@@ -21,26 +21,6 @@
          (with-open [r (clojure.java.io/reader f)]
            (read (java.io.PushbackReader. r))))))
 
-(defn make-params-for-auth-request
-  "Prepare params map for clj_http post call
-  app_data is a map in the form
-   - client-id ID
-   - client-secret SECRET
-   - username USERNAME
-   - password PASSWORD
-   - security-token TOKEN
-  http-client-config-map is a (potentially empty) map of options accepted by clj-http/core/request,
-  including keys such as: connection-timeout connection-request-timeout connection-manager"
-  [{:keys [client-id client-secret username password security-token] :as app_data} & [http-client-config-map]]
-  (let [salesforce-params {:grant_type "password"
-                           :client_id client-id ; note conversion of hyphen to underscore in key name
-                           :client_secret client-secret ; note conversion of hyphen to underscore in key name
-                           :username username
-                           :password (str password security-token)
-                           :format "json"}
-        all-params (merge {:form-params salesforce-params} (or http-client-config-map {}))]
-    all-params))
-
 (def ^:private limit-info (atom {}))
 
 (defn- parse-limit-info [v]

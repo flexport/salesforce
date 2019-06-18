@@ -25,46 +25,6 @@
    :password       "my-PASSWORD"
    :security-token "my-TOKEN"})
 
-(def well-formed-client-config-empty {})
-
-(deftest test-make-params-for-auth-request
-  (testing "accepts nil 2nd arg"
-    (is
-     (=
-      {:form-params {:grant_type    "password"
-                     :client_id     "my-ID"
-                     :client_secret "my-SECRET"
-                     :format        "json",
-                     :username      "my-USERNAME"
-                     :password      "my-PASSWORDmy-TOKEN"}}
-      (make-params-for-auth-request well-formed-auth-app-data nil))))
-
-  (testing "accepts empty 2nd arg"
-    (is
-     (=
-      {:form-params {:grant_type    "password"
-                     :client_id     "my-ID"
-                     :client_secret "my-SECRET"
-                     :format        "json",
-                     :username      "my-USERNAME"
-                     :password      "my-PASSWORDmy-TOKEN"}}
-      (make-params-for-auth-request well-formed-auth-app-data {}))))
-
-  (testing "includes all keys from 2nd arg when provided"
-    (is
-     (=
-      {:form-params                {:grant_type    "password"
-                                    :client_id     "my-ID"
-                                    :client_secret "my-SECRET"
-                                    :format        "json",
-                                    :username      "my-USERNAME"
-                                    :password      "my-PASSWORDmy-TOKEN"}
-       :connection-timeout         10
-       :connection-request-timeout 15
-       :foo                        5}
-      (make-params-for-auth-request well-formed-auth-app-data
-                                    {:connection-timeout 10 :connection-request-timeout 15 :foo 5})))))
-
 (def well-formed-auth-token-mock
   {:instance_url "https://salesforce.localhost" :access_token "my_token"})
 
