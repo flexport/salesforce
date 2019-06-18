@@ -285,7 +285,7 @@
     (apply str [url "?q=" soql])))
 
 (defn soql-prepare
-  "Prepares params to execute an arbitrary SOQL query
+  "Prepares params for http client to execute an arbitrary SOQL query
    i.e SELECT name from Account
    http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
   [query token & [http-client-config-map]]
