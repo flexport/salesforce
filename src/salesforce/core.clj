@@ -54,6 +54,7 @@
 (defn- perform-request [client-params]
   "Part 2 of 2 of replacement of 'request' - An impure function that uses output of 'prepare-request to make actual http call via clj-http"
   (let [resp (http/request client-params)]
+    ; TODO The limit reading code does not seem to be working; at least (read-limit-info) only returns {} after making a couple of soql calls. Extract to its own function and fix.
     (some-> (get-in resp [:headers "sforce-limit-info"]) ;; Record limit info in atom, if available (does not seem to be provided in auth responses.)
             (parse-limit-info)
             (partial reset! limit-info))
