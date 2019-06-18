@@ -101,7 +101,9 @@
         (json/decode true))))
 
 (defn- request
-  "Make a HTTP request to the Salesforce.com REST API
+  "DEPRECATED. Use the combination of `prepare-request` and `peform-request` instead.
+   Make a HTTP request to the Salesforce.com REST API
+   Make a HTTP request to the Salesforce.com REST API
    Token is the full map returned from (auth! @conf)"
   [method url token & [params]]
   (let [base-url (:instance_url token)
