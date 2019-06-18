@@ -115,9 +115,9 @@
   - password PASSWORD
   - security-token TOKEN
   - login-host HOSTNAME (optional; default login.salesforce.com)
-  http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
+  http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
   "
-  [{:keys [client-id client-secret username password security-token login-host] :as app_data} & [http-client-config-map]]
+  [{:keys [client-id client-secret username password security-token login-host] :as app_data} & [http-client-config]]
   (let [hostname (or login-host "login.salesforce.com")
         auth-url (format "https://%s/services/oauth2/token" hostname)
         salesforce-params {:grant_type "password"
@@ -126,7 +126,7 @@
                            :username username
                            :password (str password security-token)
                            :format "json"}
-        client-params (merge (or http-client-config-map {})
+        client-params (merge (or http-client-config {})
                              {:form-params salesforce-params}
                              {:method :post :url auth-url})]
     client-params))
@@ -140,10 +140,10 @@
    - password PASSWORD
    - security-token TOKEN
    - login-host HOSTNAME (default login.salesforce.com)
-   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
+   http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
    "
-  [app_data & [http-client-config-map]]
-  (-> (auth-prepare app_data http-client-config-map)
+  [app_data & [http-client-config]]
+  (-> (auth-prepare app_data http-client-config)
       (perform-request)))
 
 ;; Salesforce API version information
@@ -303,14 +303,14 @@
 (defn soql-prepare
   "Prepares params for http client to execute an arbitrary SOQL query
    i.e SELECT name from Account
-   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
-  [query token & [http-client-config-map]]
-  (prepare-request :get (gen-query-url @+version+ query) token http-client-config-map))
+   http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
+  [query token & [http-client-config]]
+  (prepare-request :get (gen-query-url @+version+ query) token http-client-config))
 
 (defn soql!
   "Executes an arbitrary SOQL query
    i.e SELECT name from Account
-   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
-  [query token & [http-client-config-map]]
-  (-> (soql-prepare query token http-client-config-map)
+   http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
+  [query token & [http-client-config]]
+  (-> (soql-prepare query token http-client-config)
       (perform-request)))
