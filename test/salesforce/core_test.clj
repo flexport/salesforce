@@ -99,3 +99,9 @@
             :connection-timeout 5000}
            (prepare-request :get "/foo/bar/baz" well-formed-auth-token-mock {:connection-timeout 5000})))))
 
+(with-private-fns [salesforce.core [parse-limit-info]]
+  (deftest test-parse-limit-info
+
+    (testing "extracts info"
+      (is (= {:used 289725 :available 645000}
+             (parse-limit-info "api-usage=289725/645000"))))))

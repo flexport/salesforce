@@ -23,6 +23,10 @@
 
 (def ^:private limit-info (atom {}))
 
+(defn- extract-limit-info-header [response]
+  "Extracts the Salesforce limit info header from response"
+  (get-in response [:headers "Sforce-Limit-Info"]))
+
 (defn- parse-limit-info [v]
   (let [[used available]
         (->> (-> (str/split v #"=")
@@ -31,6 +35,17 @@
              (map #(Integer/parseInt %)))]
     {:used used
      :available available}))
+
+(defn- store-new-limit-info [new-limit-info]
+  "Stores updated limit info in atom"
+  (reset! limit-info new-limit-info))
+
+(defn- extract-and-store-limit-info! [response]
+  "Extracts limit info from response header, stores it in atom, and returns it"
+  (some-> response
+          (extract-limit-info-header)
+          (parse-limit-info)
+          (store-new-limit-info)))
 
 (defn read-limit-info
   "Deref the value of the `limit-info` atom which is
@@ -54,10 +69,9 @@
 (defn- perform-request [client-params]
   "Part 2 of 2 of replacement of 'request' - An impure function that uses output of 'prepare-request to make actual http call via clj-http"
   (let [resp (http/request client-params)]
-    ; TODO The limit reading code does not seem to be working; at least (read-limit-info) only returns {} after making a couple of soql calls. Extract to its own function and fix.
-    (some-> (get-in resp [:headers "sforce-limit-info"]) ;; Record limit info in atom, if available (does not seem to be provided in auth responses.)
-            (parse-limit-info)
-            (partial reset! limit-info))
+    ; Record limit info in atom, if available (does not seem to be provided in auth responses.)
+    (extract-and-store-limit-info! resp)
+    ; TODO: Should we include limit-info in result? Something like {:result decoded-result :limit-info limit-info}
     (-> resp
         :body
         (json/decode true))))
