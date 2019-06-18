@@ -65,6 +65,17 @@
       (make-params-for-auth-request well-formed-auth-app-data
                                     {:connection-timeout 10 :connection-request-timeout 10 :foo 5})))))
 
+(def well-formed-auth-token-mock
+  {:instance_url "https://salesforce.localhost" :access_token "my_token"})
+
+(def expected-auth-header-from-well-formed-auth-token-mock
+  {"Authorization" "Bearer my_token"})
+
+(deftest test-soql-prepare
+  (testing "should generate expected params "
+    (is (= {:method :get :url "https://salesforce.localhost/services/data/v39.0/query?q=SELECT+foo+from+Account" :headers expected-auth-header-from-well-formed-auth-token-mock}
+           (soql-prepare "SELECT foo from Account" well-formed-auth-token-mock)))))
+
 ;; Private functions
 
 
@@ -76,10 +87,16 @@
 
 (with-private-fns [salesforce.core [prepare-request]]
   (deftest test-prepare-request
-    (testing "should generate expected params"
-      (let [token {:instance_url "http://salesforce.localhost" :access_token "my_token"}]
-        (is (= {:method :get
-                :url "http://salesforce.localhost/foo/bar/baz"
-                :headers {"Authorization" "Bearer my_token"}}
-               (prepare-request :get "/foo/bar/baz" token)))))))
+    (testing "should generate expected params when no client params specified"
+      (is (= {:method :get
+              :url "https://salesforce.localhost/foo/bar/baz"
+              :headers expected-auth-header-from-well-formed-auth-token-mock}
+             (prepare-request :get "/foo/bar/baz" well-formed-auth-token-mock)))))
+
+  (testing "should generate expected params when client params are specified"
+    (is (= {:method :get
+            :url "https://salesforce.localhost/foo/bar/baz"
+            :headers expected-auth-header-from-well-formed-auth-token-mock
+            :connection-timeout 5000}
+           (prepare-request :get "/foo/bar/baz" well-formed-auth-token-mock {:connection-timeout 5000})))))
 

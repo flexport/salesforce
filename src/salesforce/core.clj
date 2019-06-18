@@ -276,7 +276,7 @@
 (defn ^:private gen-query-url
   "Given an SOQL string, i.e \"SELECT name from Account\"
    generate a Salesforce SOQL query url in the form:
-   /services/data/v20.0/query/?q=SELECT+name+from+Account"
+   /services/data/v39.0/query?q=SELECT+name+from+Account"
   [version query]
   (let [url  (format "/services/data/v%s/query" version)
         soql (java.net.URLEncoder/encode query "UTF-8")]
