@@ -60,16 +60,55 @@
                                     :username      "my-USERNAME"
                                     :password      "my-PASSWORDmy-TOKEN"}
        :connection-timeout         10
-       :connection-request-timeout 10
+       :connection-request-timeout 15
        :foo                        5}
       (make-params-for-auth-request well-formed-auth-app-data
-                                    {:connection-timeout 10 :connection-request-timeout 10 :foo 5})))))
+                                    {:connection-timeout 10 :connection-request-timeout 15 :foo 5})))))
 
 (def well-formed-auth-token-mock
   {:instance_url "https://salesforce.localhost" :access_token "my_token"})
 
 (def expected-auth-header-from-well-formed-auth-token-mock
   {"Authorization" "Bearer my_token"})
+
+(deftest test-auth-prepare
+  (testing "should generate expected params with default url when login-url not provided"
+    (is (= {:method :post
+            :url "https://login.salesforce.com/services/oauth2/token"
+            :form-params {:grant_type    "password"
+                          :client_id     "my-ID"
+                          :client_secret "my-SECRET"
+                          :format        "json",
+                          :username      "my-USERNAME"
+                          :password      "my-PASSWORDmy-TOKEN"}}
+           (auth-prepare well-formed-auth-app-data))))
+
+  (testing "should generate expected params with given login-url when provided"
+    (let [params-with-login-host (merge well-formed-auth-app-data {:login-host "salesforce.localhost"})]
+      (is (= {:method :post
+              :url "https://salesforce.localhost/services/oauth2/token"
+              :form-params {:grant_type    "password"
+                            :client_id     "my-ID"
+                            :client_secret "my-SECRET"
+                            :format        "json",
+                            :username      "my-USERNAME"
+                            :password      "my-PASSWORDmy-TOKEN"}}
+             (auth-prepare params-with-login-host)))))
+
+  (testing "should generate expected params when given http client config"
+    (let [sf-params-with-login-host (merge well-formed-auth-app-data {:login-host "salesforce.localhost"})
+          http-client-params {:connection-timeout 10 :connection-request-timeout 15}]
+      (is (= {:method :post
+              :url "https://salesforce.localhost/services/oauth2/token"
+              :connection-timeout         10
+              :connection-request-timeout 15
+              :form-params {:grant_type    "password"
+                            :client_id     "my-ID"
+                            :client_secret "my-SECRET"
+                            :format        "json",
+                            :username      "my-USERNAME"
+                            :password      "my-PASSWORDmy-TOKEN"}}
+             (auth-prepare sf-params-with-login-host http-client-params))))))
 
 (deftest test-soql-prepare
   (testing "should generate expected params "

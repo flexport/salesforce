@@ -41,25 +41,6 @@
         all-params (merge {:form-params salesforce-params} (or http-client-config-map {}))]
     all-params))
 
-(defn auth!
-  "Get security token and auth info from Salesforce
-   app_data is a map in the form
-   - client-id ID
-   - client-secret SECRET
-   - username USERNAME
-   - password PASSWORD
-   - security-token TOKEN
-   - login-host HOSTNAME (default login.salesforce.com)
-   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
-   "
-  [{:keys [login-host] :as app_data} & [http-client-config-map]]
-  (let [hostname (or login-host "login.salesforce.com")
-        auth-url (format "https://%s/services/oauth2/token" hostname)
-        all-params (make-params-for-auth-request app_data http-client-config-map)
-        resp (http/post auth-url all-params)]
-    (-> (:body resp)
-        (json/decode true))))
-
 (def ^:private limit-info (atom {}))
 
 (defn- parse-limit-info [v]
@@ -93,9 +74,9 @@
 (defn- perform-request [client-params]
   "Part 2 of 2 of replacement of 'request' - An impure function that uses output of 'prepare-request to make actual http call via clj-http"
   (let [resp (http/request client-params)]
-    (-> (get-in resp [:headers "sforce-limit-info"]) ;; Record limit info in atom
-        (parse-limit-info)
-        (partial reset! limit-info))
+    (some-> (get-in resp [:headers "sforce-limit-info"]) ;; Record limit info in atom, if available (does not seem to be provided in auth responses.)
+            (parse-limit-info)
+            (partial reset! limit-info))
     (-> resp
         :body
         (json/decode true))))
@@ -129,6 +110,46 @@
       (request method url token params)
       {:method method :url url :token token})
     (catch Exception e (.toString e))))
+
+(defn auth-prepare
+  "Prepare a request to get auth info from Salesforce
+  app_data is a map in the form
+  - client-id ID
+  - client-secret SECRET
+  - username USERNAME
+  - password PASSWORD
+  - security-token TOKEN
+  - login-host HOSTNAME (optional; default login.salesforce.com)
+  http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
+  "
+  [{:keys [client-id client-secret username password security-token login-host] :as app_data} & [http-client-config-map]]
+  (let [hostname (or login-host "login.salesforce.com")
+        auth-url (format "https://%s/services/oauth2/token" hostname)
+        salesforce-params {:grant_type "password"
+                           :client_id client-id ; note conversion of hyphen to underscore in key name
+                           :client_secret client-secret ; note conversion of hyphen to underscore in key name
+                           :username username
+                           :password (str password security-token)
+                           :format "json"}
+        client-params (merge (or http-client-config-map {})
+                             {:form-params salesforce-params}
+                             {:method :post :url auth-url})]
+    client-params))
+
+(defn auth!
+  "Get security token and auth info from Salesforce
+   app_data is a map in the form
+   - client-id ID
+   - client-secret SECRET
+   - username USERNAME
+   - password PASSWORD
+   - security-token TOKEN
+   - login-host HOSTNAME (default login.salesforce.com)
+   http-client-config-map is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
+   "
+  [app_data & [http-client-config-map]]
+  (-> (auth-prepare app_data http-client-config-map)
+      (perform-request)))
 
 ;; Salesforce API version information
 
