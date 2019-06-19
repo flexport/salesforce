@@ -1,5 +1,6 @@
 (ns salesforce.core-test
   (:use clojure.test
+        clj-http.fake
         salesforce.core))
 
 (defmacro with-private-fns [[ns fns] & tests]
@@ -67,8 +68,17 @@
   (testing "should generate expected params "
     (is (= {:method :get
             :headers expected-auth-header-from-well-formed-auth-token-mock
-            :url "https://salesforce.localhost/services/data/v39.0/query?q=SELECT+foo+from+Account" }
+            :url "https://salesforce.localhost/services/data/v39.0/query?q=SELECT+foo+from+Account"}
            (soql-prepare "SELECT foo from Account" well-formed-auth-token-mock)))))
+
+(deftest test-soql!
+  (testing "response-shape"
+    (is (= {:api-result {:a 1} :limit-info {:used 100 :available 555}}
+           ; Note that if the none of the urls we give in a `with-fake-routes` block match what is given to the client, then the response is NOT mocked
+           ; and the client makes an actual call. Because we use host salesforce.localhost in the test, the request won't go anywhere if tht happens.
+           (with-fake-routes
+             {"https://salesforce.localhost/services/data/v39.0/query?q=SELECT+foo+from+Account" (fn [request] {:status 200 :headers {"Sforce-Limit-Info" "api-usage=100/555"} :body "{\"a\":1}"})}
+             (soql! "SELECT foo from Account" well-formed-auth-token-mock))))))
 
 ;; Private functions
 

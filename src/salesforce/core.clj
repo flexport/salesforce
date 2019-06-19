@@ -24,10 +24,11 @@
 (def ^:private limit-info (atom {}))
 
 (defn- extract-limit-info-header [response]
-  "Extracts the Salesforce limit info header from response"
+  "Extracts the Salesforce limit info header from response, if available. Note that auth responses do not include it."
   (get-in response [:headers "Sforce-Limit-Info"]))
 
 (defn- parse-limit-info [v]
+  "Parses out used and available numbers from string input that looks like api-usage=286479/645000"
   (let [[used available]
         (->> (-> (str/split v #"=")
                  (second)
@@ -37,7 +38,7 @@
      :available available}))
 
 (defn- store-new-limit-info [new-limit-info]
-  "Stores updated limit info in atom"
+  "Stores updated limit info in atom and returns it"
   (reset! limit-info new-limit-info))
 
 (defn- extract-and-store-limit-info! [response]
@@ -67,14 +68,16 @@
     client-params))
 
 (defn- perform-request [client-params]
-  "Part 2 of 2 of replacement of 'request' - An impure function that uses output of 'prepare-request to make actual http call via clj-http"
-  (let [resp (http/request client-params)]
-    ; Record limit info in atom, if available (does not seem to be provided in auth responses.)
-    (extract-and-store-limit-info! resp)
-    ; TODO: Should we include limit-info in result? Something like {:result decoded-result :limit-info limit-info}
-    (-> resp
-        :body
-        (json/decode true))))
+  "Part 2 of 2 of replacement of 'request' - An impure function that uses output of 'prepare-request to make actual http call via clj-http.
+  Returns a map: {:api-result the-result-from-salesforce :limit-info a_limit_info_map
+  Note that limit_info_map will be empty for auth requests. For other requests, it should be in the form {:used 15000 :available 623000}
+  "
+  (let [resp (http/request client-params)
+        limit-info (or (extract-and-store-limit-info! resp) {})
+        api-result (-> resp
+                       :body
+                       (json/decode true))]
+    {:api-result api-result :limit-info limit-info}))
 
 (defn- request
   "DEPRECATED. Use the combination of `prepare-request` and `peform-request` instead.
@@ -97,7 +100,7 @@
         :body
         (json/decode true))))
 
-(defn-  safe-request
+(defn- safe-request
   "Perform a request but catch any exceptions"
   [method url token & params]
   (try
@@ -141,6 +144,7 @@
    - security-token TOKEN
    - login-host HOSTNAME (default login.salesforce.com)
    http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
+   Returns a map: {:api-result the-result-from-salesforce :limit-info {}} (auth responses do not include the limit info header)
    "
   [app_data & [http-client-config]]
   (-> (auth-prepare app_data http-client-config)
@@ -310,7 +314,9 @@
 (defn soql!
   "Executes an arbitrary SOQL query
    i.e SELECT name from Account
-   http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
+   http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
+   Returns a map: {:api-result the-result-from-salesforce :limit-info {:used some_number :available some_other_number}}
+   "
   [query token & [http-client-config]]
   (-> (soql-prepare query token http-client-config)
       (perform-request)))

@@ -8,4 +8,9 @@
                  [cheshire "5.8.1"]]
 
   :plugins [[lein-cljfmt "0.6.4"]
-            [lein-ancient "0.6.15"]]) ; For detecting and fixing outdated dependencies. See https://github.com/xsc/lein-ancient
+            [lein-ancient "0.6.15"]] ; lein-ancient is for detecting and fixing outdated dependencies. See https://github.com/xsc/lein-ancient
+
+  :profiles
+
+  {:test         {:dependencies [[clj-http-fake "1.0.3"]]
+                 :resource-paths ["env/test/resources"]}})
