@@ -327,7 +327,7 @@
   [query token & [http-client-config]]
   (prepare-authorized-request :get (gen-query-url @+version+ query) token http-client-config))
 
-(defn soql!
+(defn soql
   "Executes an arbitrary SOQL query
    i.e SELECT name from Account
    http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager
