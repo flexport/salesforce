@@ -1,3 +1,4 @@
+; I think this is going to symbolize the keys whereas the old one does not?
 (ns salesforce.core
   (:require
    [clojure.string :as str]
@@ -56,12 +57,19 @@
   []
   @limit-info)
 
-(defn- prepare-request
+(defn- prepare-public-request
+  "Prepares a request that does not require authorization so it can be executed by `perform-request`"
+  [method full-url & [http-client-config]]
+  (merge (or http-client-config {})
+         {:method method
+          :url full-url}))
+
+(defn- prepare-authorized-request
   "Part 1 of 2 of replacement of 'request' - A pure function that prepares input for a call to perform-request"
-  [method url token & [params]]
+  [method url token & [http-client-config]]
   (let [base-url (:instance_url token)
         full-url (str base-url url)
-        client-params (merge (or params {})
+        client-params (merge (or http-client-config {})
                              {:method method
                               :url full-url
                               :headers {"Authorization" (str "Bearer " (:access_token token))}})]
@@ -153,18 +161,15 @@
 ;; Salesforce API version information
 
 (defn all-versions
-  "Lists all available versions of the Salesforce REST API"
-  []
-  (->> (http/get "http://na1.salesforce.com/services/data/")
-       :body
-       (json/parse-string)))
+  "Lists all available versions of the Salesforce REST API."
+  [& [http-client-config]]
+  (-> (prepare-public-request :get "http://na1.salesforce.com/services/data/" http-client-config)
+      (perform-request)))
 
 (defn latest-version
   "What is the latest API version?"
   []
-  (->> (last (all-versions))
-       (map (fn [[k _]] [(keyword k) _]))
-       (into {})
+  (->> (last (:api-result (all-versions)))
        :version))
 
 (defonce ^:dynamic +version+ (atom "39.0"))
@@ -309,7 +314,7 @@
    i.e SELECT name from Account
    http-client-config is an optional map of options accepted by clj-http/core/request, such as keys: connection-timeout connection-request-timeout connection-manager"
   [query token & [http-client-config]]
-  (prepare-request :get (gen-query-url @+version+ query) token http-client-config))
+  (prepare-authorized-request :get (gen-query-url @+version+ query) token http-client-config))
 
 (defn soql!
   "Executes an arbitrary SOQL query
