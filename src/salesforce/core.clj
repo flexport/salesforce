@@ -12,15 +12,16 @@
   `(binding [+token+ ~token]
      (do ~@forms)))
 
-(defn-  as-json
+(defn- as-json
   "Takes a Clojure map and returns a JSON string"
   [map]
   (json/generate-string map))
 
-(defn conf [f]
-  (ref (binding [*read-eval* false]
-         (with-open [r (clojure.java.io/reader f)]
-           (read (java.io.PushbackReader. r))))))
+(comment
+  (defn conf [f]
+    (ref (binding [*read-eval* false]
+           (with-open [r (clojure.java.io/reader f)]
+             (read (java.io.PushbackReader. r)))))))
 
 (def ^:private limit-info (atom {}))
 
@@ -190,41 +191,46 @@
 
 ;; Resources
 
-(defn resources [token]
-  (request :get (format "/services/data/v%s/" @+version+) token))
+(comment
+  (defn resources [token]
+    (request :get (format "/services/data/v%s/" @+version+) token)))
 
-(defn so->objects
-  "Lists all of the available sobjects"
-  [token]
-  (request :get (format "/services/data/v%s/sobjects" @+version+) token))
+(comment
+  (defn so->objects
+    "Lists all of the available sobjects"
+    [token]
+    (request :get (format "/services/data/v%s/sobjects" @+version+) token)))
 
-(defn so->all
-  "All sobjects i.e (so->all \"Account\" auth-info)"
-  [sobject token]
-  (request :get (format "/services/data/v%s/sobjects/%s" @+version+ sobject) token))
+(comment
+  (defn so->all
+    "All sobjects i.e (so->all \"Account\" auth-info)"
+    [sobject token]
+    (request :get (format "/services/data/v%s/sobjects/%s" @+version+ sobject) token)))
 
-(defn so->recent
-  "The recently created items under an sobject identifier
-   e.g (so->recent \"Account\" auth-info)"
-  [sobject token]
-  (:recentItems (so->all sobject token)))
+(comment
+  (defn so->recent
+    "The recently created items under an sobject identifier
+     e.g (so->recent \"Account\" auth-info)"
+    [sobject token]
+    (:recentItems (so->all sobject token))))
 
-(defn so->get
-  "Fetch a single SObject or passing in a vector of attributes
+(comment
+  (defn so->get
+    "Fetch a single SObject or passing in a vector of attributes
    return a subset of the data"
-  ([sobject identifier fields token]
-   (when (or (seq? fields) (vector? fields))
-     (let [params (->> (into [] (interpose "," fields))
-                       (str/join)
-                       (conj ["?fields="])
-                       (apply str))
-           uri (format "/services/data/v%s/sobjects/%s/%s%s"
-                       @+version+ sobject identifier params)
-           response (request :get uri token)]
-       (dissoc response :attributes))))
-  ([sobject identifier token]
-   (request :get
-            (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier) token)))
+    ([sobject identifier fields token]
+     (when (or (seq? fields) (vector? fields))
+       (let [params (->> (into [] (interpose "," fields))
+                         (str/join)
+                         (conj ["?fields="])
+                         (apply str))
+             uri (format "/services/data/v%s/sobjects/%s/%s%s"
+                         @+version+ sobject identifier params)
+             response (request :get uri token)]
+         (dissoc response :attributes))))
+    ([sobject identifier token]
+     (request :get
+              (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier) token))))
 
 (comment
   ;; Fetch all the info
@@ -232,66 +238,71 @@
   ;; Fetch only the name and website attribute
   (so->get "Account" "001i0000007nAs3" ["Name" "Website"] auth))
 
-(defn so->describe
-  "Describe an SObject"
-  [sobject token]
-  (request :get
-           (format "/services/data/v%s/sobjects/%s/describe" @+version+ sobject) token))
+(comment
+  (defn so->describe
+    "Describe an SObject"
+    [sobject token]
+    (request :get
+             (format "/services/data/v%s/sobjects/%s/describe" @+version+ sobject) token)))
 
 (comment
   (so->describe "Account" auth))
 
-(defn so->create
-  "Create a new record"
-  [sobject record token]
-  (let [params
-        {:form-params record
-         :content-type :json}]
-    (request :post
-             (format "/services/data/v%s/sobjects/%s/" @+version+ sobject) token params)))
+(comment
+  (defn so->create
+    "Create a new record"
+    [sobject record token]
+    (let [params
+          {:form-params record
+           :content-type :json}]
+      (request :post
+               (format "/services/data/v%s/sobjects/%s/" @+version+ sobject) token params))))
 
 (comment
   (so->create "Account" {:Name "My new account"} auth))
 
-(defn so->update
-  "Update a record
-   - sojbect the name of the object i.e Account
-   - identifier the object id
-   - record map of data to update object with
-   - token your api auth info"
-  [sobject identifier record token]
-  (let [params
-        {:body (json/generate-string record)
-         :content-type :json}]
-    (request :patch
-             (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier)
-             token params)))
+(comment
+  (defn so->update
+    "Update a record
+     - sojbect the name of the object i.e Account
+     - identifier the object id
+     - record map of data to update object with
+     - token your api auth info"
+    [sobject identifier record token]
+    (let [params
+          {:body (json/generate-string record)
+           :content-type :json}]
+      (request :patch
+               (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier)
+               token params))))
 
-(defn so->delete
-  "Delete a record
-   - sojbect the name of the object i.e Account
-   - identifier the object id
-   - token your api auth info"
-  [sobject identifier token]
-  (request :delete
-           (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier)
-           token))
+(comment
+  (defn so->delete
+    "Delete a record
+     - sojbect the name of the object i.e Account
+     - identifier the object id
+     - token your api auth info"
+    [sobject identifier token]
+    (request :delete
+             (format "/services/data/v%s/sobjects/%s/%s" @+version+ sobject identifier)
+             token)))
 
 (comment
   (so->delete "Account" "001i0000008Ge2OAAS" auth))
 
-(defn so->flow
-  "Invoke a flow (see: https://developer.salesforce.com/docs/atlas.en-us.salesforce_vpm_guide.meta/salesforce_vpm_guide/vpm_distribute_system_rest.htm)
-  - indentifier of flow (e.g. \"Escalate_to_Case\")
-  - inputs map (e.g. {:inputs [{\"CommentCount\" 6
-                                \"FeedItemId\" \"0D5D0000000cfMY\"}]})
-  - token to your api auth info"
-  [identifier token & [data]]
-  (let [params {:body (json/generate-string (or data {:inputs []}))
-                :content-type :json}]
-    (request :post
-             (format "/services/data/v%s/actions/custom/flow/%s" @+version+ identifier)
-             token params)))
+(comment
+  (defn so->flow
+    "Invoke a flow (see: https://developer.salesforce.com/docs/atlas.en-us.salesforce_vpm_guide.meta/salesforce_vpm_guide/vpm_distribute_system_rest.htm)
+    - indentifier of flow (e.g. \"Escalate_to_Case\")
+    - inputs map (e.g. {:inputs [{\"CommentCount\" 6
+                                  \"FeedItemId\" \"0D5D0000000cfMY\"}]})
+    - token to your api auth info"
+    [identifier token & [data]]
+    (let [params {:body (json/generate-string (or data {:inputs []}))
+                  :content-type :json}]
+      (request :post
+               (format "/services/data/v%s/actions/custom/flow/%s" @+version+ identifier)
+               token params))))
 
 (comment
   (so->flow "Escalate_to_Case" a {:inputs [{"CommentCount" 6
