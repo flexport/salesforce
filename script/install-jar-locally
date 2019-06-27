@@ -1,0 +1,6 @@
+#! /usr/bin/env sh
+
+# Convenience script for installing the jar to the local maven repository (typically under `~/.m2`)
+# Doing this is helpful for using unpublished versions of the jar in other projects during development.
+
+lein install

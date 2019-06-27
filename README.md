@@ -1,7 +1,28 @@
-# Salesforce
+# Under development
+This library forked from [owainlewis/salesforce](https://github.com/owainlewis/salesforce) is under development and 
+should be considered as pre-release. While this development continues, all versions will contain the `SNAPSHOT` 
+qualifier.
+  
+Salesforce API calls are being refactored to work in 2 steps:
+  1. Prepare a map of params
+  2. Send the map of params to clj-http's `request` function
+  
+Because the preparation functions are pure, they are easy to test. We don't need to test clj-http's `request` 
+function; we only need to test that we are sending it what we expect to be sending it.
 
-This is an up to date wrapper for the Salesforce.com REST API. I initially found working with
-the API to be a bit frustrating and hopefully this wrapper will make everything easy for you.
+Another new feature is that the preparation functions expose the ability to specify http client configurations such as 
+timeouts.
+
+While this development is in progress, functions that have not been migrated to the new approach have been commented
+out. 
+
+The migrated functions have a new response shape; instead of just returning the api results, they return a map that 
+includes both the api results, under key `:api-results`, and the limit info as a possibly empty map under key `:limit-info`.
+In addition, the keys of the map under `:api-results` are always converted to keywords. This may become an option in 
+future versions. 
+
+
+# Salesforce
 
 More information about the Salesforce REST API can be found at
 
@@ -9,10 +30,10 @@ More information about the Salesforce REST API can be found at
 
 ## How do I use it?
 
-It is available from Clojars. : )
+It is available from clojars.org.
 
 ```
-[org.clojars.flexport-clojure-eng/salesforce "1.0.4"]
+[org.clojars.flexport-clojure-eng/salesforce "2.0.0-SNAPSHOT"]
 ```
 
 ## Usage
@@ -32,7 +53,7 @@ like this
    :password ""
    :security-token ""})
 
-(def auth-info (auth! config))
+(def auth-info (:api-result (auth! config)))
 ```
 You can optionally pass in :login-host if you want to use test.salesforce.com or my.salesforce.com addresses
 
@@ -50,10 +71,6 @@ The response looks something like this
 
 Now you can use your auth-config to make requests to the API.
 
-```clojure
-(resources auth-info)
-```
-
 ## Setting the API version
 
 There are multiple versions of the Salesforce API so you need to decare the version you want to use.
@@ -61,7 +78,7 @@ There are multiple versions of the Salesforce API so you need to decare the vers
 You can easily get the latest API version with the following function
 
 ```clojure
-(latest-version) ;; => "39.0"
+(latest-version) ;; => "46.0"
 ```
 
 You can set a version in several ways.
@@ -69,13 +86,13 @@ You can set a version in several ways.
 Globally
 
 ```clojure
-(set-version! "39.0")
+(set-version! "46.0")
 ```
 
 Inside a macro
 
 ```clojure
-(with-version "39.0"
+(with-version "46.0"
   ;; Do stuff here )
 
 ```
@@ -85,68 +102,6 @@ Or just using the latest version (this is slow as it needs to make an additional
 ```clojure
 (with-latest-version
   ;; Do stuff here)
-```
-
-## SObjects
-
-The following methods are available
-
-+ so->all
-+ so->get
-+ so->create
-+ so->update
-+ so->delete
-+ so->describe
-
-Get all sobjects
-
-```clojure
-(so->objects auth-info)
-```
-
-Get all records
-
-```clojure
-(so->all "Account" auth-info)
-```
-
-Get recently created items
-
-```clojure
-(so->recent "Account" auth-info)
-```
-
-Get a single record
-
-```clojure
-;; Fetch all the info
-(so->get "Account" "001i0000007nAs3" auth-info)
-;; Fetch only the name and website attributes
-(so->get "Account" "001i0000007nAs3" ["Name" "Website"] auth-info))
-```
-
-Create a record
-
-```clojure
-(so->create "Account" {:Name "My Account"} auth-info)
-```
-
-Update a record
-
-```clojure
-(so->update "Account" {:Name "My New Account Name"} auth-info)
-```
-
-Delete a record
-
-```clojure
-(so->delete "Account" "001i0000008Ge2OAAS" auth-info)
-```
-
-Describe an record
-
-```clojure
-(so->describe "Account" auth-info)
 ```
 
 ## Salesforce Object Query Language
@@ -171,31 +126,14 @@ This final example shows an example REPL session using the API
    :security-token ""})
 
 ;; Get auth info needed to make http requests
-(def auth (auth! config))
+(def auth (:api-result (auth! config)))
 
 ;; Get and then set the latest API version globally
 (set-version! (latest-version))
 
 ;; Now we are all set to access the salesforce API
-(so->objects auth)
 
-;; Get all information from accounts
-(so->all "Account" auth)
-
-;; Fetch a single account
-(so->get "Account" "001i0000008Ge2TAAS" auth)
-
-;; Create a new account
-(so->create "Account" {:Name "My new account"} auth)
-
-;; Update the account
-(so->update "Account" "001i0000008JTPpAAO" {:Name "My Updated Account Name"} auth)
-
-
-;; Delete the account we just created
-(so->delete "Account" "001i0000008JTPpAAO" auth)
-
-;; Finally use SOQL to find account information
+;; Use SOQL to find account information
 (:records (soql "SELECT name from Account" auth))
 
 ```

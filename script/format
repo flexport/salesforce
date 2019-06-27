@@ -1,0 +1,5 @@
+#! /usr/bin/env sh
+
+# Convenience script for formatting the code
+
+lein cljfmt fix
